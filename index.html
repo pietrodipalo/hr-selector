@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Selector — Selezione Personale</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f4f2;color:#1a1a18;min-height:100vh}
+.app{display:flex;height:100vh;overflow:hidden}
+/* SIDEBAR */
+.sidebar{width:240px;background:#fff;border-right:0.5px solid rgba(0,0,0,.12);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:16px;border-bottom:0.5px solid rgba(0,0,0,.12)}
+.sidebar-header h1{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.sidebar-header p{font-size:11px;color:#888;margin-top:2px}
+.positions-list{flex:1;overflow-y:auto;padding:8px}
+.position-item{padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;border:0.5px solid transparent;transition:all .15s}
+.position-item:hover{background:#f4f4f2}
+.position-item.active{background:#e6f1fb;border-color:rgba(55,138,221,.25)}
+.pos-name{font-size:13px;font-weight:500}
+.pos-meta{font-size:11px;color:#888;margin-top:2px}
+.pos-badge{display:inline-block;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500;margin-top:5px}
+.badge-open{background:#eaf3de;color:#3b6d11}
+.badge-closed{background:#f0f0ee;color:#666}
+.btn-new{margin:8px;padding:10px;border:1.5px dashed rgba(0,0,0,.2);border-radius:8px;background:transparent;cursor:pointer;font-size:13px;color:#666;width:calc(100% - 16px);text-align:center;transition:all .15s}
+.btn-new:hover{background:#f4f4f2;color:#1a1a18}
+.sidebar-footer{padding:10px 12px;border-top:0.5px solid rgba(0,0,0,.12)}
+.btn-settings{width:100%;padding:8px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;background:transparent;cursor:pointer;font-size:12px;color:#666;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.btn-settings:hover{background:#f4f4f2}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:12px 20px;background:#fff;border-bottom:0.5px solid rgba(0,0,0,.12);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+.topbar-left h2{font-size:16px;font-weight:600}
+.topbar-left p{font-size:12px;color:#888;margin-top:2px}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:7px 13px;border-radius:8px;border:0.5px solid rgba(0,0,0,.2);background:transparent;cursor:pointer;font-size:13px;color:#1a1a18;display:inline-flex;align-items:center;gap:6px;transition:all .15s;white-space:nowrap;font-family:inherit}
+.btn:hover{background:#f4f4f2}
+.btn.primary{background:#1a1a18;color:#fff;border-color:#1a1a18}
+.btn.primary:hover{opacity:.85}
+.btn.danger{color:#a32d2d;border-color:rgba(226,75,74,.3)}
+.btn.danger:hover{background:#fcebeb}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+/* FILTERS */
+.filters-bar{padding:10px 20px;background:#fff;border-bottom:0.5px solid rgba(0,0,0,.12);display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.filter-label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.5px}
+.filter-input{padding:5px 10px;border-radius:8px;border:0.5px solid rgba(0,0,0,.15);background:#fff;font-size:12px;color:#1a1a18;outline:none}
+.filter-input:focus{border-color:rgba(0,0,0,.3)}
+/* ANALYZING BAR */
+.analyzing-bar{padding:12px 20px;background:#e6f1fb;border-bottom:0.5px solid rgba(55,138,221,.2);display:flex;align-items:center;gap:12px;font-size:13px;color:#185fa5;flex-shrink:0}
+.spinner{width:16px;height:16px;border:2px solid rgba(55,138,221,.3);border-top-color:#185fa5;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:16px 20px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:#aaa}
+.empty-state i{font-size:48px;opacity:.4}
+.empty-state p{font-size:14px}
+/* CARDS */
+.candidates-grid{display:flex;flex-direction:column;gap:8px}
+.candidate-card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;overflow:hidden}
+.card-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.card-header:hover{background:#fafaf8}
+.avatar{width:40px;height:40px;border-radius:50%;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#185fa5;flex-shrink:0}
+.cand-main{flex:1;min-width:0}
+.cand-name{font-size:14px;font-weight:500}
+.cand-sub{font-size:12px;color:#888;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.score-badge{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.score-high{background:#eaf3de;color:#3b6d11}
+.score-mid{background:#faeeda;color:#854f0b}
+.score-low{background:#fcebeb;color:#a32d2d}
+.stars{display:flex;gap:2px}
+.star{font-size:15px;cursor:pointer;transition:transform .1s;line-height:1}
+.star:hover{transform:scale(1.2)}
+.star.filled{color:#ef9f27}
+.star.empty{color:#ddd}
+.chevron{font-size:16px;color:#bbb;transition:transform .2s;flex-shrink:0}
+.chevron.open{transform:rotate(180deg)}
+/* CARD BODY */
+.card-body{display:none;border-top:0.5px solid rgba(0,0,0,.08)}
+.card-body.open{display:block}
+.card-body-inner{padding:16px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.info-item .label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#aaa;margin-bottom:3px}
+.info-item .value{font-size:13px;font-weight:500}
+.collocamento-si{color:#3b6d11}
+.collocamento-no{color:#888}
+.ai-box{background:#f7f7f5;border-radius:8px;padding:14px;margin-bottom:14px}
+.ai-box-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#888;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-section{margin-bottom:10px}
+.ai-section:last-child{margin-bottom:0}
+.ai-section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.label-strengths{color:#3b6d11}
+.label-weaknesses{color:#a32d2d}
+.label-notes{color:#888}
+.ai-section p{font-size:13px;line-height:1.6;color:#333}
+.comment-area{margin-bottom:14px}
+.comment-area label{font-size:12px;color:#888;display:block;margin-bottom:6px;font-weight:500}
+.comment-textarea{width:100%;padding:10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-size:13px;color:#1a1a18;resize:vertical;min-height:70px;font-family:inherit;outline:none;line-height:1.5}
+.comment-textarea:focus{border-color:rgba(0,0,0,.3)}
+.card-actions{display:flex;gap:8px}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;border:0.5px solid rgba(0,0,0,.12)}
+.modal-header{padding:16px 20px;border-bottom:0.5px solid rgba(0,0,0,.1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-header h3{font-size:15px;font-weight:600}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:0.5px solid rgba(0,0,0,.1);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:#fff}
+/* FORM */
+.form-group{margin-bottom:16px}
+.form-label{font-size:13px;font-weight:500;display:block;margin-bottom:6px}
+.form-hint{font-size:11px;color:#888;margin-bottom:6px;display:block}
+.form-input{width:100%;padding:8px 10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-size:13px;color:#1a1a18;outline:none;font-family:inherit}
+.form-input:focus{border-color:rgba(0,0,0,.3)}
+textarea.form-input{min-height:80px;resize:vertical;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.criteria-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.criteria-item{background:#f7f7f5;border-radius:8px;padding:10px}
+.criteria-item .form-label{font-size:12px;margin-bottom:5px}
+/* UPLOAD */
+.upload-zone{border:1.5px dashed rgba(0,0,0,.2);border-radius:12px;padding:28px;text-align:center;cursor:pointer;position:relative;transition:all .15s}
+.upload-zone:hover{background:#f7f7f5;border-color:rgba(0,0,0,.35)}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-zone i{font-size:32px;color:#bbb;display:block;margin-bottom:8px}
+.upload-zone p{font-size:13px;color:#666}
+.upload-zone small{font-size:11px;color:#aaa}
+.file-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.file-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f7f7f5;border-radius:8px;font-size:12px}
+.file-item i{font-size:16px;color:#185fa5}
+.file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-remove{cursor:pointer;color:#a32d2d;background:none;border:none;font-size:18px;padding:0;line-height:1}
+/* SETTINGS */
+.settings-card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:20px;margin-bottom:12px}
+.settings-card h3{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.settings-card p{font-size:13px;color:#666;margin-bottom:14px}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1}
+.status-ok{font-size:11px;color:#3b6d11;margin-top:6px;display:flex;align-items:center;gap:4px}
+.status-warn{font-size:11px;color:#854f0b;margin-top:6px}
+.info-box{background:#e6f1fb;border-radius:8px;padding:14px}
+.info-box h4{font-size:13px;font-weight:600;color:#185fa5;margin-bottom:8px}
+.info-box ol{font-size:12px;color:#444;line-height:2.2;padding-left:18px}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1>HR Selector</h1>
+      <p>Selezione del personale</p>
+    </div>
+    <div class="positions-list" id="positionsList"></div>
+    <button class="btn-new" onclick="openNewPositionModal()">
+      <i class="ti ti-plus"></i> Nuova posizione
+    </button>
+    <div class="sidebar-footer">
+      <button class="btn-settings" onclick="showSettings()">
+        <i class="ti ti-settings"></i> Impostazioni
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h2 id="topbarTitle">Seleziona una posizione</h2>
+        <p id="topbarMeta">Scegli dalla barra laterale o crea una nuova posizione</p>
+      </div>
+      <div class="topbar-actions" id="topbarActions"></div>
+    </div>
+
+    <div id="analyzingBar" style="display:none" class="analyzing-bar">
+      <div class="spinner"></div>
+      <span id="analyzingText">Analisi in corso...</span>
+    </div>
+
+    <div class="filters-bar" id="filtersBar" style="display:none">
+      <span class="filter-label">Filtra:</span>
+      <input class="filter-input" type="text" placeholder="Nome candidato..." id="fName" oninput="applyFilters()" style="width:150px">
+      <input class="filter-input" type="text" placeholder="Comune..." id="fCity" oninput="applyFilters()" style="width:120px">
+      <select class="filter-input" id="fScore" onchange="applyFilters()" style="width:140px">
+        <option value="">Match: tutti</option>
+        <option value="80">≥ 80%</option>
+        <option value="60">≥ 60%</option>
+        <option value="40">≥ 40%</option>
+      </select>
+      <select class="filter-input" id="fStars" onchange="applyFilters()" style="width:140px">
+        <option value="">Stelle: tutte</option>
+        <option value="5">≥ 5 stelle</option>
+        <option value="4">≥ 4 stelle</option>
+        <option value="3">≥ 3 stelle</option>
+        <option value="2">≥ 2 stelle</option>
+        <option value="1">≥ 1 stella</option>
+      </select>
+      <select class="filter-input" id="fListe" onchange="applyFilters()" style="width:160px">
+        <option value="">Liste collocamento: tutti</option>
+        <option value="si">Sì</option>
+        <option value="no">No/Non indicato</option>
+      </select>
+      <button class="btn" onclick="clearFilters()" style="padding:5px 10px;font-size:12px">
+        <i class="ti ti-x"></i> Reset filtri
+      </button>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="empty-state">
+        <i class="ti ti-users"></i>
+        <p>Seleziona o crea una posizione per iniziare</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="overlay" class="overlay" style="display:none" onclick="overlayClick(event)">
+  <div class="modal" id="modalEl"></div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let S = {
+  apiKey: localStorage.getItem('hr_apikey') || '',
+  sheetUrl: localStorage.getItem('hr_sheeturl') || '',
+  positions: JSON.parse(localStorage.getItem('hr_positions') || '[]'),
+  candidates: JSON.parse(localStorage.getItem('hr_candidates') || '{}'),
+  activeId: null
+};
+
+// Demo data se primo avvio
+if (!S.positions.length) {
+  S.positions = [
+    {id:'pos1',name:'Segreteria Studenti',status:'open',created:'10/05/2026',criteria:{citta:'Roma',titolo:'Diploma',esperienza:'2',lingue:'Italiano C2, Inglese B1',competenze:'Gestione registro scolastico, SIDI, Excel, Google Workspace'}},
+    {id:'pos2',name:'Tutor Online',status:'open',created:'18/05/2026',criteria:{citta:'',titolo:'Laurea',esperienza:'3',lingue:'Italiano C2, Inglese B2',competenze:'Didattica online, LMS, creazione contenuti digitali'}}
+  ];
+  S.candidates = {
+    pos1:[
+      {id:'c1',name:'Marco Bianchi',age:32,gender:'M',nationality:'Italiana',city:'Roma',education:'Diploma Ragioneria',experience:4,languages:'Italiano C2, Inglese B1',collocamento:'no',score:87,strengths:'Esperienza pluriennale in segreteria scolastica. Ottima conoscenza SIDI ed Excel. Residente a Roma come richiesto.',weaknesses:'Inglese al limite del requisito minimo. Nessuna esperienza dichiarata con Google Workspace.',notes:'Profilo solido. Consigliato per colloquio.',comment:'',stars:4,filename:'CV_Marco_Bianchi.pdf'},
+      {id:'c2',name:'Laura Esposito',age:28,gender:'F',nationality:'Italiana',city:'Roma',education:'Laurea Triennale Comunicazione',experience:2,languages:'Italiano C2, Inglese B2, Francese A2',collocamento:'si',score:74,strengths:'Ottima conoscenza inglese. Iscrizione liste di collocamento. Esperienza in ambito educativo.',weaknesses:'Background comunicativo, non amministrativo. Anni di esperienza al minimo.',notes:'Interessante per varietà linguistica. Verificare competenze amministrative al colloquio.',comment:'Chiamata il 20/05 — disponibile da luglio',stars:3,filename:'CV_Laura_Esposito.pdf'},
+      {id:'c3',name:'Giovanni Russo',age:45,gender:'M',nationality:'Italiana',city:'Napoli',education:'Diploma',experience:8,languages:'Italiano C2',collocamento:'no',score:38,strengths:'Molti anni di esperienza. Ottima conoscenza Excel.',weaknesses:'Residente a Napoli, non Roma. Nessuna conoscenza inglese. Non soddisfa requisiti geografici.',notes:'Gap geografico critico. Sconsigliato salvo disponibilità a trasferimento.',comment:'',stars:0,filename:'CV_Giovanni_Russo.pdf'}
+    ],
+    pos2:[
+      {id:'c4',name:'Alessia Conti',age:35,gender:'F',nationality:'Italiana',city:'Milano',education:'Laurea Magistrale Pedagogia',experience:5,languages:'Italiano C2, Inglese C1, Spagnolo B1',collocamento:'no',score:93,strengths:'Background pedagogico eccellente. Esperienza consolidata in e-learning. Inglese C1 supera i requisiti.',weaknesses:'Nessun punto debole rilevante rispetto ai criteri.',notes:'Candidata di alto livello. Colloquio immediato consigliato.',comment:'Colloquio fissato 28/05',stars:5,filename:'CV_Alessia_Conti.pdf'},
+      {id:'c5',name:'Davide Martini',age:29,gender:'M',nationality:'Italiana',city:'Torino',education:'Laurea Triennale Informatica',experience:3,languages:'Italiano C2, Inglese B2',collocamento:'si',score:61,strengths:'Competenze tecniche solide per ambienti LMS. In lista collocamento.',weaknesses:'Laurea triennale, background tecnico più che pedagogico. Esperienza didattica limitata.',notes:'Potenzialmente valido per ruoli tecnico-tutoriali. Valutare orientamento didattico.',comment:'',stars:2,filename:'CV_Davide_Martini.pdf'}
+    ]
+  };
+  save();
+}
+
+function save() {
+  localStorage.setItem('hr_positions', JSON.stringify(S.positions));
+  localStorage.setItem('hr_candidates', JSON.stringify(S.candidates));
+}
+
+// ── UTILS ──────────────────────────────────────────────────────────────────
+const initials = n => n.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+const uid = () => 'id_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+const today = () => new Date().toLocaleDateString('it-IT');
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────
+function renderSidebar() {
+  document.getElementById('positionsList').innerHTML = S.positions.map(p => `
+    <div class="position-item ${S.activeId===p.id?'active':''}" onclick="selectPos('${p.id}')">
+      <div class="pos-name">${p.name}</div>
+      <div class="pos-meta">${(S.candidates[p.id]||[]).length} candidati · ${p.created}</div>
+      <span class="pos-badge ${p.status==='open'?'badge-open':'badge-closed'}">${p.status==='open'?'Aperta':'Archiviata'}</span>
+    </div>
+  `).join('');
+}
+
+function selectPos(id) {
+  S.activeId = id;
+  renderSidebar();
+  renderTopbar();
+  document.getElementById('filtersBar').style.display = 'flex';
+  applyFilters();
+}
+
+// ── TOPBAR ─────────────────────────────────────────────────────────────────
+function renderTopbar() {
+  const p = S.positions.find(x=>x.id===S.activeId);
+  if (!p) return;
+  document.getElementById('topbarTitle').textContent = p.name;
+  document.getElementById('topbarMeta').textContent = `${(S.candidates[p.id]||[]).length} candidati · Creata il ${p.created}`;
+  document.getElementById('topbarActions').innerHTML = `
+    <button class="btn" onclick="openUpload()"><i class="ti ti-upload"></i> Carica CV</button>
+    <button class="btn" onclick="openEditPos('${p.id}')"><i class="ti ti-edit"></i> Modifica</button>
+    <button class="btn" onclick="toggleStatus('${p.id}')">${p.status==='open'?'<i class="ti ti-archive"></i> Archivia':'<i class="ti ti-lock-open"></i> Riapri'}</button>
+    <button class="btn danger" onclick="deletePos('${p.id}')"><i class="ti ti-trash"></i></button>
+  `;
+}
+
+// ── FILTERS ────────────────────────────────────────────────────────────────
+function applyFilters() {
+  if (!S.activeId) return;
+  let list = [...(S.candidates[S.activeId]||[])];
+  const name = document.getElementById('fName').value.toLowerCase();
+  const city = document.getElementById('fCity').value.toLowerCase();
+  const score = parseInt(document.getElementById('fScore').value)||0;
+  const stars = parseInt(document.getElementById('fStars').value)||0;
+  const liste = document.getElementById('fListe').value;
+  if (name) list = list.filter(c=>c.name.toLowerCase().includes(name));
+  if (city) list = list.filter(c=>c.city.toLowerCase().includes(city));
+  if (score) list = list.filter(c=>c.score>=score);
+  if (stars) list = list.filter(c=>c.stars>=stars);
+  if (liste==='si') list = list.filter(c=>c.collocamento==='si');
+  if (liste==='no') list = list.filter(c=>c.collocamento!=='si');
+  list.sort((a,b)=>b.score-a.score);
+  renderCandidates(list);
+}
+
+function clearFilters() {
+  ['fName','fCity','fScore','fStars','fListe'].forEach(id=>document.getElementById(id).value='');
+  applyFilters();
+}
+
+// ── CANDIDATES ─────────────────────────────────────────────────────────────
+function renderCandidates(list) {
+  const el = document.getElementById('mainContent');
+  if (!list.length) {
+    el.innerHTML='<div class="empty-state"><i class="ti ti-user-search"></i><p>Nessun candidato trovato con i filtri applicati</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="candidates-grid">' + list.map(c=>cardHTML(c)).join('') + '</div>';
+}
+
+function cardHTML(c) {
+  const sc = c.score>=75?'score-high':c.score>=50?'score-mid':'score-low';
+  const starsHTML = [1,2,3,4,5].map(n=>`<span class="star ${c.stars>=n?'filled':'empty'}" onclick="setStar(event,'${c.id}',${n})">★</span>`).join('');
+  const col = c.collocamento==='si'?'<span style="color:#3b6d11;font-weight:500">Sì ✓</span>':'<span style="color:#888">No / Non dichiarato</span>';
+  return `
+<div class="candidate-card" id="card_${c.id}">
+  <div class="card-header" onclick="toggleCard('${c.id}')">
+    <div class="avatar">${initials(c.name)}</div>
+    <div class="cand-main">
+      <div class="cand-name">${c.name}</div>
+      <div class="cand-sub">${c.city} · ${c.education} · ${c.experience} anni esp.</div>
+    </div>
+    <div class="cand-right">
+      <span class="score-badge ${sc}">${c.score}% match</span>
+      <div class="stars">${starsHTML}</div>
+    </div>
+    <i class="ti ti-chevron-down chevron" id="chev_${c.id}"></i>
+  </div>
+  <div class="card-body" id="body_${c.id}">
+    <div class="card-body-inner">
+      <div class="info-grid">
+        <div class="info-item"><div class="label">Età</div><div class="value">${c.age ? c.age+' anni' : 'N/D'}</div></div>
+        <div class="info-item"><div class="label">Sesso</div><div class="value">${c.gender==='M'?'Maschile':c.gender==='F'?'Femminile':'N/D'}</div></div>
+        <div class="info-item"><div class="label">Nazionalità</div><div class="value">${c.nationality||'N/D'}</div></div>
+        <div class="info-item"><div class="label">Comune</div><div class="value">${c.city||'N/D'}</div></div>
+        <div class="info-item"><div class="label">Titolo di studio</div><div class="value">${c.education||'N/D'}</div></div>
+        <div class="info-item"><div class="label">Anni esperienza</div><div class="value">${c.experience!=null?c.experience+' anni':'N/D'}</div></div>
+        <div class="info-item"><div class="label" style="grid-column:span 1">Lingue</div><div class="value" style="font-size:12px">${c.languages||'N/D'}</div></div>
+        <div class="info-item"><div class="label">Liste collocamento</div><div class="value">${col}</div></div>
+      </div>
+      <div class="ai-box">
+        <div class="ai-box-title"><i class="ti ti-sparkles" style="font-size:14px"></i> Analisi Claude</div>
+        <div class="ai-section"><div class="ai-section-label label-strengths">Punti di forza</div><p>${c.strengths||'—'}</p></div>
+        <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-weaknesses">Punti di debolezza</div><p>${c.weaknesses||'—'}</p></div>
+        <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-notes">Raccomandazione</div><p>${c.notes||'—'}</p></div>
+      </div>
+      <div class="comment-area">
+        <label>Le tue note</label>
+        <textarea class="comment-textarea" placeholder="Aggiungi note sul candidato..." onchange="saveComment('${c.id}',this.value)">${c.comment||''}</textarea>
+      </div>
+      <div class="card-actions">
+        <button class="btn" onclick="viewCV('${c.id}')"><i class="ti ti-file-text"></i> CV originale</button>
+        <button class="btn danger" onclick="deleteCandidate('${c.id}')"><i class="ti ti-trash"></i> Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+function toggleCard(id) {
+  document.getElementById('body_'+id).classList.toggle('open');
+  document.getElementById('chev_'+id).classList.toggle('open');
+}
+
+function setStar(e, id, n) {
+  e.stopPropagation();
+  for (const pid in S.candidates) {
+    const c = S.candidates[pid].find(x=>x.id===id);
+    if (c) { c.stars = c.stars===n ? 0 : n; break; }
+  }
+  save(); applyFilters();
+}
+
+function saveComment(id, val) {
+  for (const pid in S.candidates) {
+    const c = S.candidates[pid].find(x=>x.id===id);
+    if (c) { c.comment = val; break; }
+  }
+  save();
+}
+
+function viewCV(id) {
+  let found;
+  for (const pid in S.candidates) { found=S.candidates[pid].find(x=>x.id===id); if(found)break; }
+  if (found && found.cvData) {
+    const a = document.createElement('a');
+    a.href = found.cvData;
+    a.download = found.filename || 'cv.pdf';
+    a.click();
+  } else {
+    alert('CV originale: ' + (found?.filename||'N/D') + '\n\nNota: il file è conservato nel browser locale. In produzione sarà accessibile via Google Drive.');
+  }
+}
+
+function deleteCandidate(id) {
+  if (!confirm('Eliminare questo candidato?')) return;
+  for (const pid in S.candidates) S.candidates[pid] = S.candidates[pid].filter(x=>x.id!==id);
+  save(); applyFilters(); renderSidebar();
+}
+
+// ── POSITIONS ──────────────────────────────────────────────────────────────
+function toggleStatus(id) {
+  const p = S.positions.find(x=>x.id===id);
+  if (p) p.status = p.status==='open'?'closed':'open';
+  save(); renderSidebar(); renderTopbar();
+}
+
+function deletePos(id) {
+  if (!confirm('Eliminare questa posizione e tutti i candidati? Azione irreversibile.')) return;
+  S.positions = S.positions.filter(x=>x.id!==id);
+  delete S.candidates[id];
+  S.activeId = null;
+  save(); renderSidebar();
+  document.getElementById('topbarTitle').textContent = 'Seleziona una posizione';
+  document.getElementById('topbarMeta').textContent = 'Scegli dalla barra laterale o crea una nuova posizione';
+  document.getElementById('topbarActions').innerHTML = '';
+  document.getElementById('filtersBar').style.display = 'none';
+  document.getElementById('mainContent').innerHTML = '<div class="empty-state"><i class="ti ti-users"></i><p>Seleziona o crea una posizione per iniziare</p></div>';
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────────
+function showModal(html) { document.getElementById('modalEl').innerHTML=html; document.getElementById('overlay').style.display='flex'; }
+function closeModal() { document.getElementById('overlay').style.display='none'; }
+function overlayClick(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
+
+function positionForm(p) {
+  const c = p ? p.criteria : {};
+  return `
+    <div class="form-group">
+      <label class="form-label">Nome posizione *</label>
+      <input class="form-input" id="fPosName" placeholder="es. Segreteria Studenti, Tutor Online..." value="${p?p.name:''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Criteri di selezione</label>
+      <span class="form-hint">Definisci i requisiti — Claude li userà per valutare ogni CV</span>
+      <div class="criteria-grid">
+        <div class="criteria-item">
+          <label class="form-label">Comune di residenza</label>
+          <input class="form-input" id="fCitta" placeholder="es. Roma" value="${c.citta||''}">
+        </div>
+        <div class="criteria-item">
+          <label class="form-label">Titolo di studio minimo</label>
+          <input class="form-input" id="fTitolo" placeholder="es. Diploma, Laurea..." value="${c.titolo||''}">
+        </div>
+        <div class="criteria-item">
+          <label class="form-label">Anni esperienza minimi</label>
+          <input class="form-input" id="fEsperienza" type="number" min="0" placeholder="es. 2" value="${c.esperienza||''}">
+        </div>
+        <div class="criteria-item">
+          <label class="form-label">Lingue + livello minimo</label>
+          <input class="form-input" id="fLingue" placeholder="es. Inglese B2, Francese A1" value="${c.lingue||''}">
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Competenze specifiche</label>
+      <textarea class="form-input" id="fCompetenze" placeholder="es. Conoscenza SIDI, Excel avanzato, gestione LMS, Moodle...">${c.competenze||''}</textarea>
+    </div>
+  `;
+}
+
+function openNewPositionModal() {
+  showModal(`
+    <div class="modal-header"><h3>Nuova posizione</h3><button class="btn" onclick="closeModal()" style="padding:4px 8px"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">${positionForm(null)}</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Annulla</button>
+      <button class="btn primary" onclick="createPosition()"><i class="ti ti-check"></i> Crea posizione</button>
+    </div>
+  `);
+}
+
+function createPosition() {
+  const name = document.getElementById('fPosName').value.trim();
+  if (!name) { alert('Inserisci un nome per la posizione.'); return; }
+  const id = uid();
+  S.positions.unshift({
+    id, name, status:'open', created:today(),
+    criteria:{
+      citta: document.getElementById('fCitta').value.trim(),
+      titolo: document.getElementById('fTitolo').value.trim(),
+      esperienza: document.getElementById('fEsperienza').value.trim(),
+      lingue: document.getElementById('fLingue').value.trim(),
+      competenze: document.getElementById('fCompetenze').value.trim()
+    }
+  });
+  S.candidates[id] = [];
+  save(); closeModal(); renderSidebar(); selectPos(id);
+}
+
+function openEditPos(id) {
+  const p = S.positions.find(x=>x.id===id);
+  showModal(`
+    <div class="modal-header"><h3>Modifica posizione</h3><button class="btn" onclick="closeModal()" style="padding:4px 8px"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">${positionForm(p)}</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Annulla</button>
+      <button class="btn primary" onclick="savePos('${id}')"><i class="ti ti-check"></i> Salva</button>
+    </div>
+  `);
+}
+
+function savePos(id) {
+  const p = S.positions.find(x=>x.id===id);
+  p.name = document.getElementById('fPosName').value.trim();
+  p.criteria = {
+    citta: document.getElementById('fCitta').value.trim(),
+    titolo: document.getElementById('fTitolo').value.trim(),
+    esperienza: document.getElementById('fEsperienza').value.trim(),
+    lingue: document.getElementById('fLingue').value.trim(),
+    competenze: document.getElementById('fCompetenze').value.trim()
+  };
+  save(); closeModal(); renderSidebar(); renderTopbar();
+}
+
+// ── UPLOAD & ANALYZE ───────────────────────────────────────────────────────
+window._files = [];
+
+function openUpload() {
+  if (!S.apiKey) {
+    alert('Prima configura la tua API key Anthropic nelle Impostazioni (in basso a sinistra).');
+    showSettings(); return;
+  }
+  window._files = [];
+  showModal(`
+    <div class="modal-header"><h3>Carica CV da analizzare</h3><button class="btn" onclick="closeModal()" style="padding:4px 8px"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:#666;margin-bottom:16px">Carica uno o più CV (PDF o Word). Claude li analizzerà rispetto ai criteri della posizione corrente.</p>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" accept=".pdf,.doc,.docx" multiple onchange="handleFiles(this.files)" id="fileInput">
+        <i class="ti ti-cloud-upload"></i>
+        <p>Clicca o trascina i CV qui</p>
+        <small>PDF · DOC · DOCX — più file contemporaneamente</small>
+      </div>
+      <div class="file-list" id="fileList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Annulla</button>
+      <button class="btn primary" id="analyzeBtn" onclick="analyzeAll()" disabled><i class="ti ti-sparkles"></i> Analizza con Claude</button>
+    </div>
+  `);
+}
+
+function handleFiles(files) {
+  window._files = Array.from(files);
+  document.getElementById('fileList').innerHTML = window._files.map((f,i)=>`
+    <div class="file-item">
+      <i class="ti ti-file-text"></i>
+      <span class="file-name">${f.name}</span>
+      <span style="font-size:11px;color:#aaa">${(f.size/1024).toFixed(0)} KB</span>
+      <button class="file-remove" onclick="removeFile(${i})"><i class="ti ti-x"></i></button>
+    </div>
+  `).join('');
+  document.getElementById('analyzeBtn').disabled = !window._files.length;
+}
+
+function removeFile(i) {
+  window._files.splice(i,1);
+  const dt = new DataTransfer();
+  window._files.forEach(f=>dt.items.add(f));
+  document.getElementById('fileInput').files = dt.files;
+  handleFiles(dt.files);
+}
+
+async function analyzeAll() {
+  const pos = S.positions.find(x=>x.id===S.activeId);
+  if (!pos || !window._files.length) return;
+  closeModal();
+  document.getElementById('analyzingBar').style.display = 'flex';
+
+  for (let i=0; i<window._files.length; i++) {
+    const f = window._files[i];
+    document.getElementById('analyzingText').textContent = `Analisi ${i+1} di ${window._files.length}: ${f.name}...`;
+    try {
+      const b64 = await toBase64(f);
+      const isPdf = f.name.toLowerCase().endsWith('.pdf');
+      const criteriaText = buildCriteria(pos.criteria);
+      const prompt = `Sei un esperto HR. Analizza il CV allegato per la posizione "${pos.name}".\n\nCriteri richiesti:\n${criteriaText}\n\nRispondi SOLO con JSON valido, senza markdown, senza testo aggiuntivo:\n{"name":"","age":null,"gender":"M/F/ND","nationality":"","city":"","education":"","experience":0,"languages":"","collocamento":"si/no/non indicato","score":0,"strengths":"","weaknesses":"","notes":""}`;
+
+      const msgContent = isPdf
+        ? [{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]
+        : [{type:'text',text:'[Documento Word allegato — contenuto CV:]\n\n'+prompt}];
+
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':S.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:msgContent}]})
+      });
+      const data = await res.json();
+      const txt = (data.content||[]).find(x=>x.type==='text')?.text||'';
+      const clean = txt.replace(/```json|```/g,'').trim();
+      const r = JSON.parse(clean);
+      const candidate = {...r, id:uid(), comment:'', stars:0, filename:f.name, cvData:'data:application/octet-stream;base64,'+b64};
+      if (!S.candidates[pos.id]) S.candidates[pos.id]=[];
+      S.candidates[pos.id].push(candidate);
+      save();
+    } catch(err) {
+      console.error('Errore analisi',f.name,err);
+      alert('Errore nell\'analisi di '+f.name+'. Controlla la console per dettagli.');
+    }
+  }
+
+  document.getElementById('analyzingBar').style.display = 'none';
+  renderSidebar(); applyFilters();
+}
+
+function buildCriteria(c) {
+  const lines = [];
+  if (c.citta) lines.push('- Comune di residenza richiesto: '+c.citta);
+  if (c.titolo) lines.push('- Titolo di studio minimo: '+c.titolo);
+  if (c.esperienza) lines.push('- Anni di esperienza minimi: '+c.esperienza);
+  if (c.lingue) lines.push('- Lingue e livello minimo: '+c.lingue);
+  if (c.competenze) lines.push('- Competenze specifiche richieste: '+c.competenze);
+  lines.push('- Verifica se il candidato è iscritto a liste speciali di collocamento (L.68/99 o simili)');
+  lines.push('- Campi informativi (non influenzano score): età, sesso, nazionalità');
+  lines.push('- Score 0-100 basato su aderenza ai criteri oggettivi');
+  return lines.join('\n');
+}
+
+function toBase64(file) {
+  return new Promise((res,rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(r.result.split(',')[1]);
+    r.onerror = ()=>rej(new Error('Lettura fallita'));
+    r.readAsDataURL(file);
+  });
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────────
+function showSettings() {
+  S.activeId = null;
+  renderSidebar();
+  document.getElementById('filtersBar').style.display = 'none';
+  document.getElementById('topbarTitle').textContent = 'Impostazioni';
+  document.getElementById('topbarMeta').textContent = 'Configurazione API e backend condiviso';
+  document.getElementById('topbarActions').innerHTML = '';
+  document.getElementById('mainContent').innerHTML = `
+    <div style="max-width:520px;margin:0 auto;padding-top:4px">
+      <div class="settings-card">
+        <h3><i class="ti ti-key" style="font-size:16px"></i> API Key Anthropic</h3>
+        <p>Necessaria per l'analisi AI dei CV. Viene salvata solo nel tuo browser. Ottienila su <strong>console.anthropic.com</strong>.</p>
+        <div class="input-row">
+          <input class="form-input" type="password" id="inputApiKey" value="${S.apiKey}" placeholder="sk-ant-..." style="font-family:monospace;font-size:12px">
+          <button class="btn primary" onclick="saveApiKey()"><i class="ti ti-check"></i> Salva</button>
+        </div>
+        ${S.apiKey ? '<div class="status-ok"><i class="ti ti-circle-check"></i> API key configurata</div>' : '<div class="status-warn">Non ancora configurata</div>'}
+      </div>
+
+      <div class="settings-card">
+        <h3><i class="ti ti-table" style="font-size:16px"></i> Google Sheets — Backend condiviso</h3>
+        <p>Per sincronizzare i dati tra due PC, incolla l'URL del tuo Google Apps Script dopo averlo pubblicato.</p>
+        <div class="input-row">
+          <input class="form-input" type="text" id="inputSheetUrl" value="${S.sheetUrl}" placeholder="https://script.google.com/macros/s/..." style="font-size:12px">
+          <button class="btn primary" onclick="saveSheetUrl()"><i class="ti ti-check"></i> Salva</button>
+        </div>
+        ${S.sheetUrl ? '<div class="status-ok"><i class="ti ti-circle-check"></i> Backend configurato — dati sincronizzati</div>' : '<div class="status-warn">Non configurato — i dati sono salvati solo nel browser locale</div>'}
+      </div>
+
+      <div class="settings-card">
+        <div class="info-box">
+          <h4><i class="ti ti-info-circle" style="font-size:14px"></i> Come configurare il backend Google Sheets</h4>
+          <ol>
+            <li>Crea un Google Sheet nel tuo Workspace</li>
+            <li>Vai su Estensioni → Apps Script</li>
+            <li>Incolla il codice Apps Script (ti verrà fornito separatamente)</li>
+            <li>Clicca su Distribuisci → Nuova distribuzione → App web</li>
+            <li>Imposta accesso: "Chiunque" — copia l'URL e incollalo sopra</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <h3><i class="ti ti-database" style="font-size:16px"></i> Dati locali</h3>
+        <p>${S.positions.length} posizioni · ${Object.values(S.candidates).flat().length} candidati totali salvati nel browser.</p>
+        <button class="btn danger" onclick="resetAll()" style="margin-top:4px"><i class="ti ti-trash"></i> Cancella tutti i dati locali</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveApiKey() {
+  S.apiKey = document.getElementById('inputApiKey').value.trim();
+  localStorage.setItem('hr_apikey', S.apiKey);
+  showSettings();
+}
+
+function saveSheetUrl() {
+  S.sheetUrl = document.getElementById('inputSheetUrl').value.trim();
+  localStorage.setItem('hr_sheeturl', S.sheetUrl);
+  showSettings();
+}
+
+function resetAll() {
+  if (!confirm('Eliminare TUTTI i dati locali? Questa azione è irreversibile.')) return;
+  localStorage.removeItem('hr_positions');
+  localStorage.removeItem('hr_candidates');
+  S.positions = []; S.candidates = {}; S.activeId = null;
+  renderSidebar(); showSettings();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+renderSidebar();
+</script>
+</body>
+</html>
