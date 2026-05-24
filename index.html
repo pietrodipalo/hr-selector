@@ -334,20 +334,47 @@ function renderCandidates(list) {
   el.innerHTML = '<div class="candidates-grid">' + list.map(c=>cardHTML(c)).join('') + '</div>';
 }
 
+function statoColor(stato) {
+  if (!stato || stato==='In valutazione') return 'background:#f0f0ee;color:#666';
+  if (stato==='Scartato') return 'background:#fcebeb;color:#a32d2d';
+  if (stato==='Assunto') return 'background:#e6f1fb;color:#185fa5';
+  if (stato==='Lista d'attesa') return 'background:#f0e6fb;color:#7a2d9e';
+  if (stato.startsWith('Call')) return 'background:#e6f1fb;color:#185fa5';
+  if (stato.startsWith('Incontro')) return 'background:#eaf3de;color:#3b6d11';
+  if (stato==='Selezionato per call') return 'background:#eaf3de;color:#3b6d11';
+  return 'background:#faeeda;color:#854f0b';
+}
+
 function cardHTML(c) {
   const sc = c.score>=75?'score-high':c.score>=50?'score-mid':'score-low';
   const starsHTML = [1,2,3,4,5].map(n=>`<span class="star ${c.stars>=n?'filled':'empty'}" onclick="setStar(event,'${c.id}',${n})">★</span>`).join('');
   const col = c.collocamento==='si'?'<span style="color:#3b6d11;font-weight:500">Sì ✓</span>':'<span style="color:#888">No / Non dichiarato</span>';
-  const statusBadge = c.stato==='Scartato'?'<span style="background:#fcebeb;color:#a32d2d;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Scartato</span>':c.stato==='Selezionato'?'<span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Selezionato</span>':c.stato==='Assunto'?'<span style="background:#e6f1fb;color:#185fa5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Assunto</span>':'<span style="background:#faeeda;color:#854f0b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">In valutazione</span>';
+  const statoVal = c.stato||'In valutazione';
+  const statoStyle = statoColor(statoVal);
   return `
 <div class="candidate-card" id="card_${c.id}">
   <div class="card-header" onclick="toggleCard('${c.id}')">
     <div class="avatar">${initials(c.name)}</div>
     <div class="cand-main">
-      <div class="cand-name">${c.name} ${statusBadge}</div>
+      <div class="cand-name">${c.name}</div>
       <div class="cand-sub">${c.city} · ${c.education} · ${c.experience} anni esp.</div>
     </div>
-    <div class="cand-right">
+    <div class="cand-right" style="flex-direction:row;align-items:center;gap:10px">
+      <select class="stato-select" style="${statoStyle};padding:5px 10px;border-radius:6px;border:none;font-size:12px;font-weight:500;cursor:pointer;outline:none;" onchange="saveField('${c.id}','stato',this.value)" onclick="event.stopPropagation()">
+        <option value="In valutazione" ${statoVal==='In valutazione'?'selected':''}>In valutazione</option>
+        <option value="Selezionato per call" ${statoVal==='Selezionato per call'?'selected':''}>Selezionato per call</option>
+        <option value="Call — Invitato" ${statoVal==='Call — Invitato'?'selected':''}>Call — Invitato</option>
+        <option value="Call — Confermato" ${statoVal==='Call — Confermato'?'selected':''}>Call — Confermato</option>
+        <option value="Call — Effettuata" ${statoVal==='Call — Effettuata'?'selected':''}>Call — Effettuata</option>
+        <option value="Call — Non risposto" ${statoVal==='Call — Non risposto'?'selected':''}>Call — Non risposto</option>
+        <option value="Incontro — Invitato" ${statoVal==='Incontro — Invitato'?'selected':''}>Incontro — Invitato</option>
+        <option value="Incontro — Confermato" ${statoVal==='Incontro — Confermato'?'selected':''}>Incontro — Confermato</option>
+        <option value="Incontro — Effettuato" ${statoVal==='Incontro — Effettuato'?'selected':''}>Incontro — Effettuato</option>
+        <option value="Incontro — Non risposto" ${statoVal==='Incontro — Non risposto'?'selected':''}>Incontro — Non risposto</option>
+        <option value="Assunto" ${statoVal==='Assunto'?'selected':''}>Assunto</option>
+        <option value="Lista d'attesa" ${statoVal==="Lista d'attesa"?'selected':''}>Lista d'attesa</option>
+        <option value="Scartato" ${statoVal==='Scartato'?'selected':''}>Scartato</option>
+      </select>
       <span class="score-badge ${sc}">${c.score}% match</span>
       <div class="stars">${starsHTML}</div>
     </div>
@@ -380,56 +407,6 @@ function cardHTML(c) {
         <div class="ai-section"><div class="ai-section-label label-strengths">Punti di forza</div><p>${c.strengths||'—'}</p></div>
         <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-weaknesses">Punti di debolezza</div><p>${c.weaknesses||'—'}</p></div>
         <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-notes">Raccomandazione</div><p>${c.notes||'—'}</p></div>
-      </div>
-      <div class="pipeline-box">
-        <div class="pipeline-title"><i class="ti ti-git-branch" style="font-size:14px"></i> Progressione selezione</div>
-        <div class="pipeline-grid">
-          <div class="pipeline-item">
-            <label>Stato candidato</label>
-            <select class="pipeline-select" onchange="saveField('${c.id}','stato',this.value)" onclick="event.stopPropagation()">
-              <option value="In valutazione" ${(c.stato||'In valutazione')==='In valutazione'?'selected':''}>In valutazione</option>
-              <option value="Selezionato" ${c.stato==='Selezionato'?'selected':''}>Selezionato</option>
-              <option value="Scartato" ${c.stato==='Scartato'?'selected':''}>Scartato</option>
-              <option value="Assunto" ${c.stato==='Assunto'?'selected':''}>Assunto</option>
-            </select>
-          </div>
-          <div class="pipeline-item">
-            <label>Prima call online</label>
-            <select class="pipeline-select" onchange="saveField('${c.id}','primaCall',this.value)" onclick="event.stopPropagation()">
-              <option value="" ${!c.primaCall?'selected':''}>—</option>
-              <option value="Da contattare" ${c.primaCall==='Da contattare'?'selected':''}>Da contattare</option>
-              <option value="Invitato" ${c.primaCall==='Invitato'?'selected':''}>Invitato</option>
-              <option value="Confermato" ${c.primaCall==='Confermato'?'selected':''}>Confermato</option>
-              <option value="Effettuata" ${c.primaCall==='Effettuata'?'selected':''}>Effettuata</option>
-              <option value="Non risposto" ${c.primaCall==='Non risposto'?'selected':''}>Non risposto</option>
-            </select>
-          </div>
-          <div class="pipeline-item">
-            <label>Incontro in presenza</label>
-            <select class="pipeline-select" onchange="saveField('${c.id}','incontro',this.value)" onclick="event.stopPropagation()">
-              <option value="" ${!c.incontro?'selected':''}>—</option>
-              <option value="Da contattare" ${c.incontro==='Da contattare'?'selected':''}>Da contattare</option>
-              <option value="Invitato" ${c.incontro==='Invitato'?'selected':''}>Invitato</option>
-              <option value="Confermato" ${c.incontro==='Confermato'?'selected':''}>Confermato</option>
-              <option value="Effettuato" ${c.incontro==='Effettuato'?'selected':''}>Effettuato</option>
-              <option value="Non risposto" ${c.incontro==='Non risposto'?'selected':''}>Non risposto</option>
-            </select>
-          </div>
-          <div class="pipeline-item">
-            <label>Esito finale</label>
-            <select class="pipeline-select" onchange="saveField('${c.id}','esito',this.value)" onclick="event.stopPropagation()">
-              <option value="" ${!c.esito?'selected':''}>—</option>
-              <option value="In attesa" ${c.esito==='In attesa'?'selected':''}>In attesa</option>
-              <option value="Assunto" ${c.esito==='Assunto'?'selected':''}>Assunto</option>
-              <option value="Lista attesa" ${c.esito==='Lista attesa'?'selected':''}>Lista d'attesa</option>
-              <option value="Non idoneo" ${c.esito==='Non idoneo'?'selected':''}>Non idoneo</option>
-            </select>
-          </div>
-          <div class="pipeline-item">
-            <label>Data prossimo contatto</label>
-            <input type="date" class="pipeline-select" value="${c.dataContatto||''}" onchange="saveField('${c.id}','dataContatto',this.value)" onclick="event.stopPropagation()">
-          </div>
-        </div>
       </div>
       <div class="comment-area">
         <label>Le tue note</label>
