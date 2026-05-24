@@ -99,6 +99,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f4f2;color:#1a1a1
 .comment-textarea{width:100%;padding:10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-size:13px;color:#1a1a18;resize:vertical;min-height:70px;font-family:inherit;outline:none;line-height:1.5}
 .comment-textarea:focus{border-color:rgba(0,0,0,.3)}
 .card-actions{display:flex;gap:8px}
+.pipeline-box{background:#f0f4ff;border-radius:8px;padding:14px;margin-bottom:14px;border:0.5px solid rgba(55,100,221,.15)}
+.pipeline-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#4466cc;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.pipeline-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.pipeline-item label{font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.pipeline-select{width:100%;padding:7px 10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-size:13px;color:#1a1a18;outline:none;font-family:inherit;cursor:pointer}
+.pipeline-select:focus{border-color:rgba(0,0,0,.3)}
+.contact-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.contact-item label{font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.contact-input{width:100%;padding:7px 10px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;background:#fff;font-size:13px;color:#1a1a18;outline:none;font-family:inherit}
+.contact-input:focus{border-color:rgba(0,0,0,.3)}
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 .modal{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;border:0.5px solid rgba(0,0,0,.12)}
@@ -328,12 +338,13 @@ function cardHTML(c) {
   const sc = c.score>=75?'score-high':c.score>=50?'score-mid':'score-low';
   const starsHTML = [1,2,3,4,5].map(n=>`<span class="star ${c.stars>=n?'filled':'empty'}" onclick="setStar(event,'${c.id}',${n})">★</span>`).join('');
   const col = c.collocamento==='si'?'<span style="color:#3b6d11;font-weight:500">Sì ✓</span>':'<span style="color:#888">No / Non dichiarato</span>';
+  const statusBadge = c.stato==='Scartato'?'<span style="background:#fcebeb;color:#a32d2d;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Scartato</span>':c.stato==='Selezionato'?'<span style="background:#eaf3de;color:#3b6d11;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Selezionato</span>':c.stato==='Assunto'?'<span style="background:#e6f1fb;color:#185fa5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">Assunto</span>':'<span style="background:#faeeda;color:#854f0b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500">In valutazione</span>';
   return `
 <div class="candidate-card" id="card_${c.id}">
   <div class="card-header" onclick="toggleCard('${c.id}')">
     <div class="avatar">${initials(c.name)}</div>
     <div class="cand-main">
-      <div class="cand-name">${c.name}</div>
+      <div class="cand-name">${c.name} ${statusBadge}</div>
       <div class="cand-sub">${c.city} · ${c.education} · ${c.experience} anni esp.</div>
     </div>
     <div class="cand-right">
@@ -344,6 +355,16 @@ function cardHTML(c) {
   </div>
   <div class="card-body" id="body_${c.id}">
     <div class="card-body-inner">
+      <div class="contact-row">
+        <div class="contact-item">
+          <label>Telefono</label>
+          <input class="contact-input" type="tel" placeholder="es. +39 333 1234567" value="${c.telefono||''}" onchange="saveField('${c.id}','telefono',this.value)">
+        </div>
+        <div class="contact-item">
+          <label>Email</label>
+          <input class="contact-input" type="email" placeholder="es. nome@email.com" value="${c.email||''}" onchange="saveField('${c.id}','email',this.value)">
+        </div>
+      </div>
       <div class="info-grid">
         <div class="info-item"><div class="label">Età</div><div class="value">${c.age ? c.age+' anni' : 'N/D'}</div></div>
         <div class="info-item"><div class="label">Sesso</div><div class="value">${c.gender==='M'?'Maschile':c.gender==='F'?'Femminile':'N/D'}</div></div>
@@ -351,7 +372,7 @@ function cardHTML(c) {
         <div class="info-item"><div class="label">Comune</div><div class="value">${c.city||'N/D'}</div></div>
         <div class="info-item"><div class="label">Titolo di studio</div><div class="value">${c.education||'N/D'}</div></div>
         <div class="info-item"><div class="label">Anni esperienza</div><div class="value">${c.experience!=null?c.experience+' anni':'N/D'}</div></div>
-        <div class="info-item"><div class="label" style="grid-column:span 1">Lingue</div><div class="value" style="font-size:12px">${c.languages||'N/D'}</div></div>
+        <div class="info-item"><div class="label">Lingue</div><div class="value" style="font-size:12px">${c.languages||'N/D'}</div></div>
         <div class="info-item"><div class="label">Liste collocamento</div><div class="value">${col}</div></div>
       </div>
       <div class="ai-box">
@@ -360,9 +381,59 @@ function cardHTML(c) {
         <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-weaknesses">Punti di debolezza</div><p>${c.weaknesses||'—'}</p></div>
         <div class="ai-section" style="margin-top:10px"><div class="ai-section-label label-notes">Raccomandazione</div><p>${c.notes||'—'}</p></div>
       </div>
+      <div class="pipeline-box">
+        <div class="pipeline-title"><i class="ti ti-git-branch" style="font-size:14px"></i> Progressione selezione</div>
+        <div class="pipeline-grid">
+          <div class="pipeline-item">
+            <label>Stato candidato</label>
+            <select class="pipeline-select" onchange="saveField('${c.id}','stato',this.value)" onclick="event.stopPropagation()">
+              <option value="In valutazione" ${(c.stato||'In valutazione')==='In valutazione'?'selected':''}>In valutazione</option>
+              <option value="Selezionato" ${c.stato==='Selezionato'?'selected':''}>Selezionato</option>
+              <option value="Scartato" ${c.stato==='Scartato'?'selected':''}>Scartato</option>
+              <option value="Assunto" ${c.stato==='Assunto'?'selected':''}>Assunto</option>
+            </select>
+          </div>
+          <div class="pipeline-item">
+            <label>Prima call online</label>
+            <select class="pipeline-select" onchange="saveField('${c.id}','primaCall',this.value)" onclick="event.stopPropagation()">
+              <option value="" ${!c.primaCall?'selected':''}>—</option>
+              <option value="Da contattare" ${c.primaCall==='Da contattare'?'selected':''}>Da contattare</option>
+              <option value="Invitato" ${c.primaCall==='Invitato'?'selected':''}>Invitato</option>
+              <option value="Confermato" ${c.primaCall==='Confermato'?'selected':''}>Confermato</option>
+              <option value="Effettuata" ${c.primaCall==='Effettuata'?'selected':''}>Effettuata</option>
+              <option value="Non risposto" ${c.primaCall==='Non risposto'?'selected':''}>Non risposto</option>
+            </select>
+          </div>
+          <div class="pipeline-item">
+            <label>Incontro in presenza</label>
+            <select class="pipeline-select" onchange="saveField('${c.id}','incontro',this.value)" onclick="event.stopPropagation()">
+              <option value="" ${!c.incontro?'selected':''}>—</option>
+              <option value="Da contattare" ${c.incontro==='Da contattare'?'selected':''}>Da contattare</option>
+              <option value="Invitato" ${c.incontro==='Invitato'?'selected':''}>Invitato</option>
+              <option value="Confermato" ${c.incontro==='Confermato'?'selected':''}>Confermato</option>
+              <option value="Effettuato" ${c.incontro==='Effettuato'?'selected':''}>Effettuato</option>
+              <option value="Non risposto" ${c.incontro==='Non risposto'?'selected':''}>Non risposto</option>
+            </select>
+          </div>
+          <div class="pipeline-item">
+            <label>Esito finale</label>
+            <select class="pipeline-select" onchange="saveField('${c.id}','esito',this.value)" onclick="event.stopPropagation()">
+              <option value="" ${!c.esito?'selected':''}>—</option>
+              <option value="In attesa" ${c.esito==='In attesa'?'selected':''}>In attesa</option>
+              <option value="Assunto" ${c.esito==='Assunto'?'selected':''}>Assunto</option>
+              <option value="Lista attesa" ${c.esito==='Lista attesa'?'selected':''}>Lista d'attesa</option>
+              <option value="Non idoneo" ${c.esito==='Non idoneo'?'selected':''}>Non idoneo</option>
+            </select>
+          </div>
+          <div class="pipeline-item">
+            <label>Data prossimo contatto</label>
+            <input type="date" class="pipeline-select" value="${c.dataContatto||''}" onchange="saveField('${c.id}','dataContatto',this.value)" onclick="event.stopPropagation()">
+          </div>
+        </div>
+      </div>
       <div class="comment-area">
         <label>Le tue note</label>
-        <textarea class="comment-textarea" placeholder="Aggiungi note sul candidato..." onchange="saveComment('${c.id}',this.value)">${c.comment||''}</textarea>
+        <textarea class="comment-textarea" placeholder="Aggiungi note sul candidato..." onchange="saveField('${c.id}','comment',this.value)">${c.comment||''}</textarea>
       </div>
       <div class="card-actions">
         <button class="btn" onclick="viewCV('${c.id}')"><i class="ti ti-file-text"></i> CV originale</button>
@@ -387,12 +458,17 @@ function setStar(e, id, n) {
   save(); applyFilters();
 }
 
-function saveComment(id, val) {
+function saveField(id, field, val) {
   for (const pid in S.candidates) {
     const c = S.candidates[pid].find(x=>x.id===id);
-    if (c) { c.comment = val; break; }
+    if (c) { c[field] = val; break; }
   }
   save();
+  if (field === 'stato') applyFilters();
+}
+
+function saveComment(id, val) {
+  saveField(id, 'comment', val);
 }
 
 function viewCV(id) {
@@ -591,7 +667,7 @@ async function analyzeAll() {
       const b64 = await toBase64(f);
       const isPdf = f.name.toLowerCase().endsWith('.pdf');
       const criteriaText = buildCriteria(pos.criteria);
-      const prompt = `Sei un esperto HR. Analizza il CV allegato per la posizione "${pos.name}".\n\nCriteri richiesti:\n${criteriaText}\n\nRispondi SOLO con JSON valido, senza markdown, senza testo aggiuntivo:\n{"name":"","age":null,"gender":"M/F/ND","nationality":"","city":"","education":"","experience":0,"languages":"","collocamento":"si/no/non indicato","score":0,"strengths":"","weaknesses":"","notes":""}`;
+      const prompt = `Sei un esperto HR. Analizza il CV allegato per la posizione "${pos.name}".\n\nCriteri richiesti:\n${criteriaText}\n\nRispondi SOLO con JSON valido, senza markdown, senza testo aggiuntivo:\n{"name":"","age":null,"gender":"M/F/ND","nationality":"","city":"","education":"","experience":0,"languages":"","collocamento":"si/no/non indicato","telefono":"","email":"","score":0,"strengths":"","weaknesses":"","notes":""}`;
 
       const msgContent = isPdf
         ? [{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]
@@ -606,7 +682,7 @@ async function analyzeAll() {
       const txt = (data.content||[]).find(x=>x.type==='text')?.text||'';
       const clean = txt.replace(/```json|```/g,'').trim();
       const r = JSON.parse(clean);
-      const candidate = {...r, id:uid(), comment:'', stars:0, filename:f.name, cvData:'data:application/octet-stream;base64,'+b64};
+      const candidate = {...r, id:uid(), comment:'', stars:0, stato:'In valutazione', primaCall:'', incontro:'', esito:'', dataContatto:'', telefono:r.telefono||'', email:r.email||'', filename:f.name, cvData:'data:application/octet-stream;base64,'+b64};
       if (!S.candidates[pos.id]) S.candidates[pos.id]=[];
       S.candidates[pos.id].push(candidate);
       save();
